@@ -74,7 +74,59 @@ type CategorySlide = HomeCategoryConfig & {
 };
 
 const HOME_CATEGORY_LIMIT = 6;
-const CATEGORY_SLIDES: CategorySlide[] = [];
+
+type CategorySlideTemplate = {
+  aliases: string[];
+  image: number;
+};
+
+const CATEGORY_SLIDE_TEMPLATES: CategorySlideTemplate[] = [
+  {
+    aliases: ['baubedarf', 'bau-bedarf'],
+    image: require('../../assets/category-slider/baubedarf.png'),
+  },
+  {
+    aliases: ['innenausbau', 'innen-ausbau'],
+    image: require('../../assets/category-slider/innenausbau.png'),
+  },
+  {
+    aliases: ['putzerbedarf', 'putzbedarf'],
+    image: require('../../assets/category-slider/putzerbedarf.png'),
+  },
+  {
+    aliases: [
+      'verputzenwerkzeug',
+      'verputzwerkzeug',
+      'putzerwerkzeug',
+      'putzerwerkzeuge',
+      'putzwerkzeug',
+      'putzwerkzeuge',
+    ],
+    image: require('../../assets/category-slider/verputzenwerkzeug.png'),
+  },
+];
+
+function normalizeCategoryKey(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('de-DE')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function buildCategorySlides(categories: HomeCategoryConfig[]): CategorySlide[] {
+  return CATEGORY_SLIDE_TEMPLATES.flatMap((template) => {
+    const aliases = template.aliases.map(normalizeCategoryKey);
+    const category = categories.find((candidate) => {
+      const keys = [candidate.handle, candidate.title].map(normalizeCategoryKey);
+      return aliases.some((alias) => keys.some(
+        (key) => key === alias || key.includes(alias) || alias.includes(key),
+      ));
+    });
+
+    return category ? [{ ...category, image: template.image }] : [];
+  });
+}
 
 function shuffleProducts(products: Product[]): Product[] {
   const shuffled = [...products];
@@ -983,6 +1035,7 @@ export function HomeScreenV2() {
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([]);
   const [saleProductPool, setSaleProductPool] = useState<Product[]>([]);
   const [homeCategories, setHomeCategories] = useState<HomeCategoryConfig[]>([]);
+  const [categorySlides, setCategorySlides] = useState<CategorySlide[]>([]);
   const [homeCategoryProducts, setHomeCategoryProducts] = useState<Record<string, Product[]>>({});
   const [loadingHomeSections, setLoadingHomeSections] = useState(true);
   const [hydratingHomeCategories, setHydratingHomeCategories] = useState(true);
@@ -1046,19 +1099,19 @@ export function HomeScreenV2() {
   }, []);
 
   useEffect(() => {
-    if (CATEGORY_SLIDES.length === 0) return;
+    if (categorySlides.length === 0) return;
 
     const sliderWidth = Math.max(1, width - pagePadding * 2);
     const interval = setInterval(() => {
       setHeroSlideIndex((current) => {
-        const next = (current + 1) % CATEGORY_SLIDES.length;
+        const next = (current + 1) % categorySlides.length;
         heroSliderRef.current?.scrollTo({ x: next * sliderWidth, animated: true });
         return next;
       });
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [width]);
+  }, [categorySlides.length, width]);
 
   useEffect(() => {
     if (saleProductPool.length === 0) return;
@@ -1443,6 +1496,13 @@ export function HomeScreenV2() {
         }));
 
       setHomeCategories(availableHomeCategories);
+      setCategorySlides(buildCategorySlides(
+        collections.map((collection) => ({
+          id: collection.id,
+          title: collection.title,
+          handle: collection.handle,
+        })),
+      ));
 
       const [entries, saleProducts] = await Promise.all([
         Promise.all(
@@ -2135,7 +2195,7 @@ export function HomeScreenV2() {
   }
 
   function renderCategorySlider() {
-    if (CATEGORY_SLIDES.length === 0) return null;
+    if (categorySlides.length === 0) return null;
 
     const sliderWidth = Math.max(1, width - pagePadding * 2);
     const sliderHeight = sliderWidth * (1086 / 1448);
@@ -2151,10 +2211,10 @@ export function HomeScreenV2() {
             const nextIndex = Math.round(
               event.nativeEvent.contentOffset.x / sliderWidth,
             );
-            setHeroSlideIndex(Math.max(0, Math.min(nextIndex, CATEGORY_SLIDES.length - 1)));
+            setHeroSlideIndex(Math.max(0, Math.min(nextIndex, categorySlides.length - 1)));
           }}
         >
-          {CATEGORY_SLIDES.map((slide) => (
+          {categorySlides.map((slide) => (
             <Pressable
               key={slide.handle}
               onPress={() => void openHomeCategory(slide)}
@@ -2176,7 +2236,7 @@ export function HomeScreenV2() {
         </ScrollView>
 
         <View style={styles.categorySliderDots}>
-          {CATEGORY_SLIDES.map((slide, index) => (
+          {categorySlides.map((slide, index) => (
             <View
               key={`dot-${slide.handle}`}
               style={[
