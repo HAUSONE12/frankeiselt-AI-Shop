@@ -73,7 +73,28 @@ type CategorySlide = HomeCategoryConfig & {
   image: number;
 };
 
-const HOME_CATEGORY_LIMIT = 6;
+const HOME_PRODUCT_CATEGORIES: HomeCategoryConfig[] = [
+  {
+    id: '401311072515',
+    title: 'Putzerbedarf',
+    handle: 'putzerbedarf',
+  },
+  {
+    id: '651240866126',
+    title: 'Inneneausbau',
+    handle: 'inneneausbau',
+  },
+  {
+    id: '401312350467',
+    title: 'Baubedarf',
+    handle: 'baubedarf',
+  },
+  {
+    id: '401311236355',
+    title: 'Verputzen Werkzeug',
+    handle: 'verputzen-werkzeug',
+  },
+];
 
 type CategorySlideTemplate = {
   aliases: string[];
@@ -1487,13 +1508,7 @@ export function HomeScreenV2() {
 
     try {
       const collections = await getCollections(50).catch(() => []);
-      const availableHomeCategories = collections
-        .slice(0, HOME_CATEGORY_LIMIT)
-        .map((collection) => ({
-          id: collection.id,
-          title: collection.title,
-          handle: collection.handle,
-        }));
+      const availableHomeCategories = HOME_PRODUCT_CATEGORIES;
 
       setHomeCategories(availableHomeCategories);
       setCategorySlides(buildCategorySlides(
@@ -1508,7 +1523,7 @@ export function HomeScreenV2() {
         Promise.all(
           availableHomeCategories.map(async (category): Promise<[string, Product[]]> => {
             try {
-              const result = await getCollectionProducts(category.id, category.handle, 10);
+              const result = await getCollectionProducts(category.id, undefined, 10);
               return [category.handle, result.products.slice(0, 10)];
             } catch {
               return [category.handle, []];
@@ -1841,7 +1856,7 @@ export function HomeScreenV2() {
 
     setLoadingCategoryProducts(true);
     try {
-      const result = await getCollectionProducts(category.id, category.handle, 50);
+      const result = await getCollectionProducts(category.id, undefined, 50);
       setCategoryTitle(result.collection?.title ?? category.title);
       setCategoryProducts(result.products);
     } catch {
