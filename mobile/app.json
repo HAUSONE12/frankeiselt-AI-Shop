@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "Frank Eiselt",
+    "slug": "frankeiselt-ai-shop",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "de.frankeiselt.aishop",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Frank Eiselt benötigt die Spracherkennung, um gesprochene Produktnamen zu suchen.",
+        "NSMicrophoneUsageDescription": "Frank Eiselt benötigt das Mikrofon für die sprachgesteuerte Produktsuche.",
+        "NSPhotoLibraryUsageDescription": "Frank Eiselt benötigt Zugriff auf Ihre Fotomediathek, wenn Sie in einem Kontakt- oder Supportformular ein Bild auswählen und hochladen.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "de.frankeiselt.aishop",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": false,
+          "data": [
+            {
+              "scheme": "shop.66231075075.frankeiseltiashop",
+              "host": "callback"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "favicon": "./assets/icon-192.png"
+    },
+    "extra": {
+      "apiUrl": "https://frankeiselt-api-663036738401.europe-west3.run.app",
+      "eas": {
+        "projectId": "bd001ceb-3a09-441a-b7b6-fae15e2d5ce2"
+      }
+    },
+    "plugins": [
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Frank Eiselt benötigt das Mikrofon für die sprachgesteuerte Produktsuche.",
+          "speechRecognitionPermission": "Frank Eiselt benötigt die Spracherkennung, um gesprochene Produktnamen zu suchen.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-image"
+    ],
+    "scheme": "shop.66231075075.frankeiseltiashop",
+    "backgroundColor": "#FFFFFF",
+    "owner": "erbaskaya"
+  }
+}
