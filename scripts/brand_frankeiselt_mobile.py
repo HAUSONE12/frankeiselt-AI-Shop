@@ -119,6 +119,9 @@ text_files = [
 ]
 
 brand_replacements = [
+    # Protect source-code identifiers before replacing visible brand text.
+    ("invoiceFrank Eiselt", "invoiceFrankEiselt"),
+    ("invoiceHausone", "invoiceFrankEiselt"),
     ("HAUSONE", "FRANK EISELT"),
     ("HausONE", "Frank Eiselt"),
     ("HausOne", "Frank Eiselt"),
@@ -294,6 +297,7 @@ account = re.sub(
     count=1,
 )
 account = account.replace("invoiceHausone", "invoiceFrankEiselt")
+account = account.replace("invoiceFrank Eiselt", "invoiceFrankEiselt")
 account = account.replace('namespace: "hausone"', 'namespace: "frankeiselt"')
 write(account_path, account)
 
