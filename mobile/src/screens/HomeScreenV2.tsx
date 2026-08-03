@@ -10,6 +10,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -1091,6 +1092,7 @@ export function HomeScreenV2() {
   const [productBackTab, setProductBackTab] = useState<AppTab>('home');
   const [cartBackTab, setCartBackTab] = useState<AppTab>('home');
   const [loadingProductDetails, setLoadingProductDetails] = useState(false);
+  const [openPublicDetailSections, setOpenPublicDetailSections] = useState<Record<string, boolean>>({});
   const [contentDocument, setContentDocument] = useState<ContentDocument>();
   const [loadingContent, setLoadingContent] = useState(false);
   const [contentError, setContentError] = useState('');
@@ -1648,6 +1650,7 @@ export function HomeScreenV2() {
     setProductBackTab(activeTab === 'productDetails' ? productBackTab : activeTab);
     setSelectedProduct(product);
     setSelectedVariantId(defaultVariant?.id ?? product.variantId);
+    setOpenPublicDetailSections({});
     setActiveTab('productDetails');
 
     if (!product.handle) return;
@@ -1866,20 +1869,162 @@ export function HomeScreenV2() {
     }
   }
 
-  function renderHeader() {
+  function togglePublicDetail(key: string) {
+    setOpenPublicDetailSections((current) => ({
+      ...current,
+      [key]: !current[key],
+    }));
+  }
+
+  function renderPublicAccordion(
+    key: string,
+    title?: string,
+    body?: string,
+    icon = '＋',
+  ) {
+    if (!title || !body?.trim()) return null;
+    const open = Boolean(openPublicDetailSections[key]);
+
     return (
-      <View style={styles.header}>
-        <View style={styles.brandRow}>
-          <Image
-            source={require('../../assets/logo.png')}
-            style={styles.logo}
-          />
-          <Text style={styles.brand}>Frank Eiselt</Text>
+      <View style={styles.publicDetailAccordion}>
+        <Pressable
+          onPress={() => togglePublicDetail(key)}
+          style={styles.publicDetailAccordionHeader}
+        >
+          <Text style={styles.publicDetailAccordionIcon}>{icon}</Text>
+          <Text style={styles.publicDetailAccordionTitle}>{title}</Text>
+          <Text style={styles.publicDetailAccordionChevron}>
+            {open ? '−' : '+'}
+          </Text>
+        </Pressable>
+        {open ? (
+          <Text style={styles.publicDetailAccordionBody}>{body}</Text>
+        ) : null}
+      </View>
+    );
+  }
+
+  function renderPublicProductDetails(
+    product: Product,
+    selectedVariant?: NonNullable<Product['variants']>[number],
+  ) {
+    const details = product.pageDetails;
+    if (!details) return null;
+
+    const url = product.onlineStoreUrl
+      ?? details.sourceUrl
+      ?? (product.handle ? `${SHOP_URL}/products/${product.handle}` : SHOP_URL);
+    const compareAtPrice = selectedVariant?.compareAtPrice;
+    const currency = selectedVariant?.currencyCode ?? product.currencyCode ?? 'EUR';
+
+    return (
+      <View style={styles.publicDetailWrap}>
+        <View style={styles.publicDetailTopRow}>
+          {details.availabilityBadge ? (
+            <View style={styles.publicDetailBadge}>
+              <Text style={styles.publicDetailBadgeText}>
+                {details.availabilityBadge}
+              </Text>
+            </View>
+          ) : <View />}
+
+          <Pressable
+            onPress={() => void Share.share({
+              title: product.title,
+              message: `${product.title}\n${url}`,
+              url,
+            })}
+            style={styles.publicDetailShareButton}
+          >
+            <Text style={styles.publicDetailShareText}>↗ Teilen</Text>
+          </Pressable>
+        </View>
+
+        {compareAtPrice && compareAtPrice !== selectedVariant?.price ? (
+          <Text style={styles.publicDetailComparePrice}>
+            Statt {compareAtPrice} {currency}
+          </Text>
+        ) : null}
+
+        <Text style={styles.publicDetailTax}>
+          {details.taxAndShippingText ?? 'inkl. 19% USt. zzgl. Versandkosten'}
+        </Text>
+
+        {details.deliveryTime ? (
+          <Text style={styles.publicDetailService}>
+            ✓ Lieferzeit: {details.deliveryTime}
+          </Text>
+        ) : null}
+        {details.selfPickupText ? (
+          <Text style={styles.publicDetailService}>✓ {details.selfPickupText}</Text>
+        ) : null}
+        {details.pickupText ? (
+          <Text style={styles.publicDetailPickup}>⌖ {details.pickupText}</Text>
+        ) : null}
+
+        <View style={styles.publicDetailAccordionGroup}>
+          {renderPublicAccordion('shipping', details.shippingTitle, details.shippingText, '▰')}
+          {renderPublicAccordion('payment', details.paymentTitle, details.paymentText, '▣')}
+          {renderPublicAccordion('returns', details.returnsTitle, details.returnsText, '⇄')}
+        </View>
+
+        {details.technicalData?.length ? (
+          <View style={styles.publicDetailSection}>
+            <Text style={styles.productDetailSectionTitle}>Technische Daten</Text>
+            {details.technicalData.map((item, index) => (
+              <View key={`${item.label}-${index}`} style={styles.publicDetailSpecRow}>
+                <Text style={styles.publicDetailSpecLabel}>{item.label}</Text>
+                <Text style={styles.publicDetailSpecValue}>{item.value}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {details.productFeatures?.length ? (
+          <View style={styles.publicDetailSection}>
+            <Text style={styles.productDetailSectionTitle}>Produktmerkmale</Text>
+            {details.productFeatures.map((item, index) => (
+              <Text key={`feature-${index}`} style={styles.publicDetailFeature}>
+                ⊕ {item}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+
+        <View style={styles.publicDetailAccordionGroup}>
+          {renderPublicAccordion(
+            'manufacturer',
+            details.manufacturerTitle,
+            details.manufacturerText ?? product.vendor,
+            '♙',
+          )}
+          {renderPublicAccordion(
+            'safety',
+            details.safetyTitle,
+            details.safetyText,
+            '♢',
+          )}
         </View>
       </View>
     );
   }
 
+  function renderHeader() {
+    return (
+      <View style={styles.header}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Zur Startseite"
+          onPress={() => setActiveTab('home')}
+          hitSlop={8}
+          style={styles.brandButton}
+        >
+          <Image source={require('../../assets/logo.png')} style={styles.logo} />
+          <Text style={styles.brand}>Frank Eiselt</Text>
+        </Pressable>
+      </View>
+    );
+  }
   function renderSearchBox() {
     const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.35] });
     const pulseOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] });
@@ -2147,6 +2292,8 @@ export function HomeScreenV2() {
               </View>
             </View>
           ) : null}
+
+          {renderPublicProductDetails(product, selectedVariant)}
 
           <Text style={styles.productDetailSectionTitle}>Produktinformationen</Text>
           <WebView
@@ -3042,10 +3189,128 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderColor: '#007ABB',
   },
-  header: { minHeight: 58, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  logo: { width: 42, height: 42, resizeMode: 'contain', marginRight: 8 },
-  brand: { color: '#12262F', fontSize: 25, fontWeight: '900', textAlign: 'center' },
+  header: { minHeight: 98, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  brandRow: { alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 78, height: 58, resizeMode: 'contain' },
+  brand: { color: '#12262F', fontSize: 19, fontWeight: '900', textAlign: 'center', marginTop: 2 },
+  brandButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  publicDetailWrap: { marginTop: 18 },
+  publicDetailTopRow: {
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  publicDetailBadge: {
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 4,
+    backgroundColor: '#E53B3B',
+  },
+  publicDetailBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  publicDetailShareButton: { paddingHorizontal: 8, paddingVertical: 6 },
+  publicDetailShareText: { color: '#007ABB', fontSize: 12, fontWeight: '800' },
+  publicDetailComparePrice: {
+    color: '#7D8991',
+    fontSize: 12,
+    marginTop: 8,
+    textDecorationLine: 'line-through',
+  },
+  publicDetailTax: {
+    color: '#71818A',
+    fontSize: 10,
+    marginTop: 5,
+    marginBottom: 10,
+    textDecorationLine: 'underline',
+  },
+  publicDetailService: {
+    color: '#278B56',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  publicDetailPickup: {
+    color: '#314852',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 8,
+  },
+  publicDetailAccordionGroup: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#DDE5E9',
+  },
+  publicDetailAccordion: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#DDE5E9',
+  },
+  publicDetailAccordionHeader: {
+    minHeight: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  publicDetailAccordionIcon: {
+    width: 27,
+    color: '#007ABB',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  publicDetailAccordionTitle: {
+    flex: 1,
+    color: '#12262F',
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '800',
+    paddingHorizontal: 7,
+  },
+  publicDetailAccordionChevron: {
+    width: 25,
+    color: '#12262F',
+    fontSize: 20,
+    textAlign: 'center',
+  },
+  publicDetailAccordionBody: {
+    color: '#526873',
+    fontSize: 12,
+    lineHeight: 19,
+    paddingLeft: 34,
+    paddingRight: 18,
+    paddingBottom: 14,
+  },
+  publicDetailSection: { marginTop: 18 },
+  publicDetailSpecRow: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#DDE5E9',
+    backgroundColor: '#F8FAFB',
+  },
+  publicDetailSpecLabel: { width: '42%', color: '#647680', fontSize: 12 },
+  publicDetailSpecValue: {
+    flex: 1,
+    color: '#12262F',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  publicDetailFeature: {
+    color: '#278B56',
+    fontSize: 12,
+    lineHeight: 19,
+    marginTop: 5,
+  },
   brandAccent: { color: '#007ABB' },
   languages: { flexDirection: 'row', gap: 4 },
   languageButton: { paddingHorizontal: 8, paddingVertical: 6, borderRadius: 10, backgroundColor: '#111C27' },

@@ -1,4 +1,5 @@
 import type { Cart, Collection, MenuItem, Product } from '../types';
+import { getProductPageDetails } from '../services/productPageDetails';
 
 export type AppLanguage = 'tr' | 'de' | 'en';
 
@@ -617,20 +618,16 @@ export async function hydrateProductImages(product: Product): Promise<Product> {
 }
 
 export async function getProductByHandle(handle: string): Promise<Product> {
-  const [apiResult, publicImages] = await Promise.all([
+  const [apiResult, publicImages, pageDetails] = await Promise.all([
     request<{ product: ApiProduct }>(
       `/api/v1/products/${encodeURIComponent(handle)}`,
     ),
     getPublicProductImages(handle).catch(() => []),
+    getProductPageDetails(handle).catch(() => ({})),
   ]);
   const product = mapProduct(apiResult.product);
   const merged = mergeProductImages(product, publicImages);
-
-  if (merged.imageUrl || (merged.images?.length ?? 0) > 0) {
-    return merged;
-  }
-
-  return product;
+  return { ...merged, pageDetails };
 }
 
 export async function getSaleProducts(limit = 9): Promise<Product[]> {

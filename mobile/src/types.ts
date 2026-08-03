@@ -50,6 +50,32 @@ export type ProductVariant = {
   selectedOptions: Array<{ name: string; value: string }>;
 };
 
+export type ProductSpecification = {
+  label: string;
+  value: string;
+};
+
+export type ProductPageDetails = {
+  sourceUrl?: string;
+  availabilityBadge?: string;
+  taxAndShippingText?: string;
+  deliveryTime?: string;
+  pickupText?: string;
+  selfPickupText?: string;
+  technicalData?: ProductSpecification[];
+  productFeatures?: string[];
+  manufacturerTitle?: string;
+  manufacturerText?: string;
+  safetyTitle?: string;
+  safetyText?: string;
+  shippingTitle?: string;
+  shippingText?: string;
+  paymentTitle?: string;
+  paymentText?: string;
+  returnsTitle?: string;
+  returnsText?: string;
+};
+
 export type Product = {
   id: string;
   title: string;
@@ -69,6 +95,7 @@ export type Product = {
   availableForSale?: boolean;
   variantId?: string;
   variants?: ProductVariant[];
+  pageDetails?: ProductPageDetails;
 };
 
 export type Collection = {
